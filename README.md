@@ -4,6 +4,8 @@ ESPHome component for MLX90640 thermal camera
 This project is forked from https://github.com/Chill-Division/M5Stack-ESPHome
 with modifications to make it to work under ESP-IDF.
 
+Thermal image is available at http://your_device.local/thermal-camera.
+
 Example usage:
 
 ```yaml
