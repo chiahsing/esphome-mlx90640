@@ -1,0 +1,8 @@
+ESPHome MLX90640 Component
+Copyright 2026 Chiahsing Yu
+
+This product includes software developed by third parties:
+
+1. The files (components/mlx90640/{mlx90640.h, mlx90640.cpp, __init__.py) are heavily modified and derived from 
+   [M5Stack-ESPHome] (https://github.com/Chill-Division/M5Stack-ESPHome)
+   Licensed under the Apache License 2.0.
