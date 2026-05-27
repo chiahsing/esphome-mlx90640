@@ -20,6 +20,7 @@ class MLX90640 : public PollingComponent, public i2c::I2CDevice, public AsyncWeb
   void set_mean_temperature_sensor(sensor::Sensor *ts) { this->mean_temperature_sensor_ = ts; };
   void set_min_temp(float min) { this->min_temp_ = min; }
   void set_max_temp(float max) { this->max_temp_ = max; }
+  void set_invert(bool value) { this->invert_ = value; }
 
   void setup() override;
   void update() override;
@@ -44,6 +45,7 @@ class MLX90640 : public PollingComponent, public i2c::I2CDevice, public AsyncWeb
   sensor::Sensor *mean_temperature_sensor_{nullptr};
   float min_temp_;
   float max_temp_;
+  bool invert_;
 
   int setup_status_ = -1;
   paramsMLX90640 params_mlx90640_;

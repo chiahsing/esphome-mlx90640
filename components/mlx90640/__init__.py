@@ -4,6 +4,7 @@ from esphome.components.web_server_base import CONF_WEB_SERVER_BASE_ID
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_ID,
+    CONF_INVERT,
     CONF_MAX_TEMPERATURE,
     CONF_MIN_TEMPERATURE,
     DEVICE_CLASS_TEMPERATURE,
@@ -48,6 +49,7 @@ CONFIG_SCHEMA = (
                 device_class=DEVICE_CLASS_TEMPERATURE,
                 state_class=STATE_CLASS_MEASUREMENT,
             ),
+            cv.Optional(CONF_INVERT, default=False): bool,
         }
     )
     .extend(cv.polling_component_schema("60s"))
@@ -77,9 +79,10 @@ async def to_code(config):
         cg.add(var.set_mean_temperature_sensor(sens))
 
     if CONF_MIN_TEMP in config:
-        min = config[CONF_MIN_TEMP]
-        cg.add(var.set_min_temp(min))
+        cg.add(var.set_min_temp(config[CONF_MIN_TEMP]))
 
     if CONF_MAX_TEMP in config:
-        max = config[CONF_MAX_TEMP]
-        cg.add(var.set_max_temp(max))
+        cg.add(var.set_max_temp(config[CONF_MAX_TEMP]))
+
+    if CONF_INVERT in config:
+        cg.add(var.set_invert(config[CONF_INVERT]))

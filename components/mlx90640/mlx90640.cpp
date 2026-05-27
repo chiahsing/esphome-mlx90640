@@ -3,11 +3,12 @@
 namespace esphome::mlx90640 {
 namespace {
 
-static const char *TAG = "MLX90640";
+static const char* TAG = "MLX90640";
 
-MLX90640 *g_mlx90640 = nullptr;
+MLX90640* g_mlx90640 = nullptr;
 
-template<typename T> T clamp(const T &value, const T &min_value, const T &max_value) {
+template <typename T>
+T clamp(const T& value, const T& min_value, const T& max_value) {
   if (value < min_value) {
     return min_value;
   } else if (value > max_value) {
@@ -17,19 +18,21 @@ template<typename T> T clamp(const T &value, const T &min_value, const T &max_va
   }
 }
 
-inline void write_uint16_le(uint8_t *&ptr, uint16_t value) {
+inline void write_uint16_le(uint8_t*& ptr, uint16_t value) {
   *ptr++ = value & 0xff;
   *ptr++ = (value >> 8) & 0xff;
 }
 
-inline void write_uint32_le(uint8_t *&ptr, uint32_t value) {
+inline void write_uint32_le(uint8_t*& ptr, uint32_t value) {
   write_uint16_le(ptr, value);
   write_uint16_le(ptr, value >> 16);
 }
 
 }  // namespace
 
-MLX90640::MLX90640(web_server_base::WebServerBase *base) : base_(base) { g_mlx90640 = this; }
+MLX90640::MLX90640(web_server_base::WebServerBase* base) : base_(base) {
+  g_mlx90640 = this;
+}
 
 void MLX90640::setup() {
   // Color table initialization
@@ -126,11 +129,12 @@ void MLX90640::update() {
   float vdd = MLX90640_GetVdd(frame, &params_mlx90640_);
   float ta = MLX90640_GetTa(frame, &params_mlx90640_);  // ambeient temp
   float tr = ta - 8;                                    // reflected temp
-  float emissivity = 0.95;                              // industry best practice
+  float emissivity = 0.95;  // industry best practice
   MLX90640_CalculateTo(frame, &params_mlx90640_, emissivity, tr, pixels_);
 
   int mode = MLX90640_GetCurMode(address_);
-  MLX90640_BadPixelsCorrection(params_mlx90640_.brokenPixels, pixels_, mode, &params_mlx90640_);
+  MLX90640_BadPixelsCorrection(params_mlx90640_.brokenPixels, pixels_, mode,
+                               &params_mlx90640_);
 
   float max_value = min_temp_;
   float min_value = max_temp_;
@@ -159,28 +163,35 @@ void MLX90640::update() {
 void MLX90640::dump_config() {
   ESP_LOGCONFIG(TAG, "MLX90640:");
   ESP_LOGCONFIG(TAG, "  Setup status: %d", setup_status_);
+  ESP_LOGCONFIG(TAG, "  Invert: %s", invert_ ? "true" : "false");
   LOG_UPDATE_INTERVAL(this);
 }
 
-bool MLX90640::canHandle(AsyncWebServerRequest *request) const {
+bool MLX90640::canHandle(AsyncWebServerRequest* request) const {
   char url[AsyncWebServerRequest::URL_BUF_SIZE];
-  return request->url_to(url) == ESPHOME_F("/thermal-camera") && request->method() == HTTP_GET;
+  return request->url_to(url) == ESPHOME_F("/thermal-camera") &&
+         request->method() == HTTP_GET;
 }
 
-void MLX90640::handleRequest(AsyncWebServerRequest *req) {
+void MLX90640::handleRequest(AsyncWebServerRequest* req) {
   static uint8_t buffer[3072];
   auto len = render_image(buffer, sizeof(buffer));
 
-  AsyncWebServerResponse *response = req->beginResponse(200, ESPHOME_F("image/bmp"), buffer, len);
-  response->addHeader(ESPHOME_F("Content-Disposition"), ESPHOME_F("inline; filename=thermal.bmp"));
+  AsyncWebServerResponse* response =
+      req->beginResponse(200, ESPHOME_F("image/bmp"), buffer, len);
+  response->addHeader(ESPHOME_F("Content-Disposition"),
+                      ESPHOME_F("inline; filename=thermal.bmp"));
 
   req->send(response);
 }
 
-int MLX90640::i2c_read(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddressRead, uint16_t *data) {
-  int status = read_register16(startAddress, reinterpret_cast<uint8_t *>(data), nMemAddressRead * 2);
+int MLX90640::i2c_read(uint8_t slaveAddr, uint16_t startAddress,
+                       uint16_t nMemAddressRead, uint16_t* data) {
+  int status = read_register16(startAddress, reinterpret_cast<uint8_t*>(data),
+                               nMemAddressRead * 2);
   if (status != i2c::NO_ERROR) {
-    ESP_LOGE(TAG, "Failed to read %d words from %d from I2C: %d", nMemAddressRead, startAddress, status);
+    ESP_LOGE(TAG, "Failed to read %d words from %d from I2C: %d",
+             nMemAddressRead, startAddress, status);
     if (status == i2c::ERROR_NOT_ACKNOWLEDGED) {
       return -1;
     } else {
@@ -195,9 +206,11 @@ int MLX90640::i2c_read(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAd
   return 0;
 }
 
-int MLX90640::i2c_write(uint8_t slaveAddr, uint16_t writeAddress, uint16_t data) {
+int MLX90640::i2c_write(uint8_t slaveAddr, uint16_t writeAddress,
+                        uint16_t data) {
   uint16_t tmp = i2c::htoi2cs(data);
-  int status = write_register16(writeAddress, reinterpret_cast<uint8_t *>(&tmp), sizeof(tmp));
+  int status = write_register16(writeAddress, reinterpret_cast<uint8_t*>(&tmp),
+                                sizeof(tmp));
   if (status != i2c::NO_ERROR) {
     ESP_LOGE(TAG, "Failed to write to %d to I2C: %d", writeAddress, status);
     if (status == i2c::ERROR_NOT_ACKNOWLEDGED) {
@@ -210,8 +223,8 @@ int MLX90640::i2c_write(uint8_t slaveAddr, uint16_t writeAddress, uint16_t data)
   return 0;
 }
 
-int MLX90640::render_image(uint8_t *buf, int size) {
-  uint8_t *ptr = buf;
+int MLX90640::render_image(uint8_t* buf, int size) {
+  uint8_t* ptr = buf;
   constexpr int kWidth = MLX90640_LINE_SIZE;
   constexpr int kHeight = MLX90640_COLUMN_SIZE;
 
@@ -246,9 +259,13 @@ int MLX90640::render_image(uint8_t *buf, int size) {
   write_uint32_le(ptr, 0);               // # of colors
   write_uint32_le(ptr, 0);               // # of important colors
 
-  for (int y = 0; y < kHeight; ++y) {
+  // BMP pixels are stored bottom-up.
+  float* line = invert_ ? &pixels_[0] : &pixels_[kWidth * (kHeight - 1)];
+  int line_offset = invert_ ? kWidth : -kWidth;
+
+  for (int y = 0; y < kHeight; ++y, line += line_offset) {
     for (int x = 0; x < kWidth; ++x) {
-      float color_f = (pixels_[x + (kWidth * y)] - min_temp_) * color_scale_;
+      float color_f = (line[x] - min_temp_) * color_scale_;
       int color_i = static_cast<int>(clamp(color_f, 0.0f, 255.0f));
 
       // Write in BGR instead of RGB
@@ -268,12 +285,15 @@ int MLX90640::render_image(uint8_t *buf, int size) {
 
 extern "C" {
 
-int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddressRead, uint16_t *data) {
-  return esphome::mlx90640::g_mlx90640->i2c_read(slaveAddr, startAddress, nMemAddressRead, data);
+int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress,
+                     uint16_t nMemAddressRead, uint16_t* data) {
+  return esphome::mlx90640::g_mlx90640->i2c_read(slaveAddr, startAddress,
+                                                 nMemAddressRead, data);
 }
 
 int MLX90640_I2CWrite(uint8_t slaveAddr, uint16_t writeAddress, uint16_t data) {
-  return esphome::mlx90640::g_mlx90640->i2c_write(slaveAddr, writeAddress, data);
+  return esphome::mlx90640::g_mlx90640->i2c_write(slaveAddr, writeAddress,
+                                                  data);
 }
 
 }  // extern "C"
