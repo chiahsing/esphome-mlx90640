@@ -119,10 +119,17 @@ void MLX90640::update() {
   uint16_t frame[834];
   // Read two subpages.
   for (int i = 0; i < 2; ++i) {
+    static int error_count = 0;
     status = MLX90640_GetFrameData(address_, frame);
     if (status < 0) {
-      ESP_LOGE(TAG, "Failed to get frame data: %d", status);
+      // This may happen sometimes. Only log when it fails 3 consequtive times.
+      if (++error_count == 3) {
+        ESP_LOGE(TAG, "Failed to get frame data: %d", status);
+        error_count = 0;
+      }
       return;
+    } else {
+      error_count = 0;
     }
   }
 
@@ -150,8 +157,12 @@ void MLX90640::update() {
   }
   float mean_value = total / kNumPixels;
 
-  if (max_value > kSpecMaxValue || min_value < kSpecMinValue) {
-    ESP_LOGE(TAG, "Failed to read pixel values");
+  if (max_value > kSpecMaxValue) {
+    ESP_LOGW(TAG, "Max pixel value %g is larger than the spec max %d", max_value, kSpecMaxValue);
+    return;
+  }
+  if (min_value < kSpecMinValue) {
+    ESP_LOGW(TAG, "Min pixel value %g is smaller than the spec min %d", min_value, kSpecMinValue);
     return;
   }
 
